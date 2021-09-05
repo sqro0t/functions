@@ -1,8 +1,11 @@
 {
+	"cleanUrls": true,
+	"trailingSlash": false,
 	"builds": [
-		{ "src": "*.go", "use": "@vercel/go" }
+		{ "src": "**/*.go", "use": "@vercel/go" }
 	],
 	"rewrites": [
-		{ "source": "/", "destination": "/version.go" }
+		{ "source": "/", "destination": "/functions/version/handler.go" },
+		{ "source": "/users", "destination": "/functions/users/handler.go" }
 	]
 }
