@@ -1,11 +1,12 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
 	"os"
 
 	"github.com/kamva/mgm/v3"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -23,18 +24,25 @@ type Oops struct {
 	Oops string `json:"oops" bson:"oops"`
 }
 
-func Handler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+func handler(c echo.Context) error {
 	err := mgm.SetDefaultConfig(nil, os.Getenv("MONGO_DATA"), options.Client().ApplyURI(os.Getenv("MONGO_URI")))
-
 	if err != nil {
 		oops := Oops{Oops: "connection to mongodb fails"}
-		json.NewEncoder(w).Encode(oops)
+		return c.JSON(http.StatusInternalServerError, oops)
 	}
 
 	users := []Users{}
 	mgm.Coll(&Users{}).SimpleFind(&users, bson.M{})
 
 	response := Response{Users: users}
-	json.NewEncoder(w).Encode(response)
+	return c.JSON(http.StatusOK, response)
+}
+
+func Handler(w http.ResponseWriter, r *http.Request) {
+	e := echo.New()
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+	e.Use(middleware.CORS())
+	e.GET("/users", handler)
+	e.ServeHTTP(w, r)
 }
